@@ -1,4 +1,74 @@
 package com.dataprogramming.security.security.jwt;
 
+import com.dataprogramming.security.config.JwtProperties;
+import com.dataprogramming.security.domain.User;
+import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.Jwts;
+import io.jsonwebtoken.SignatureAlgorithm;
+import io.jsonwebtoken.security.Keys;
+import org.springframework.stereotype.Component;
+
+import java.nio.charset.StandardCharsets;
+import java.security.Key;
+import java.util.Date;
+import java.util.Map;
+import java.util.UUID;
+
+@Component
 public class JwtUtil {
+
+    private final JwtProperties jwtProperties;
+    private final Key key;
+
+    public JwtUtil(JwtProperties jwtProperties) {
+        this.jwtProperties = jwtProperties;
+        this.key = Keys.hmacShaKeyFor(jwtProperties.getSecret().getBytes());
+    }
+
+    public String generateToken(User user) {
+        return Jwts.builder()
+                .setSubject(user.getUserName())
+                .setId(UUID.randomUUID().toString())
+                .setIssuer(jwtProperties.getIssuer())
+                .setIssuedAt(new Date())
+                .setExpiration(new Date(System.currentTimeMillis() + jwtProperties.getExpiration()))
+                .addClaims(Map.of( // 👈 claims personalizados
+                        "role", user.getRole(),
+                        "enabled", user.isEnabled(),
+                        "documentType", user.getDocumentType(),
+                        "documentNumber", user.getDocumentNumber()
+                ))
+                .signWith(key, SignatureAlgorithm.HS256)
+                .compact();
+    }
+
+    public Claims extractAllClaims(String token) {
+        return Jwts.parserBuilder()
+                .setSigningKey(getSigningKey())
+                .build()
+                .parseClaimsJws(token)
+                .getBody();
+    }
+
+    public String extractUsername(String token) {
+        return extractAllClaims(token).getSubject();
+    }
+
+    public String extractRole(String token) {
+        return extractAllClaims(token).get("role", String.class);
+    }
+
+    public boolean isTokenValid(String token, User user) {
+        final String username = extractUsername(token);
+        return (username.equals(user.getUserName()) && !isTokenExpired(token));
+    }
+
+    public boolean isTokenExpired(String token) {
+        return extractAllClaims(token).getExpiration().before(new Date());
+    }
+
+    private Key getSigningKey() {
+        return Keys.hmacShaKeyFor(jwtProperties.getSecret().getBytes(StandardCharsets.UTF_8));
+    }
+
 }
