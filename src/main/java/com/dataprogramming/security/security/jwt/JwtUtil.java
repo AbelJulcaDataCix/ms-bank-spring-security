@@ -6,6 +6,7 @@ import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.security.Keys;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 import java.nio.charset.StandardCharsets;
@@ -14,6 +15,7 @@ import java.util.Date;
 import java.util.Map;
 import java.util.UUID;
 
+@Slf4j
 @Component
 public class JwtUtil {
 
@@ -26,13 +28,14 @@ public class JwtUtil {
     }
 
     public String generateToken(User user) {
+        log.info("Generating token for user: {}", user.getUserName());
         return Jwts.builder()
                 .setSubject(user.getUserName())
                 .setId(UUID.randomUUID().toString())
                 .setIssuer(jwtProperties.getIssuer())
                 .setIssuedAt(new Date())
                 .setExpiration(new Date(System.currentTimeMillis() + jwtProperties.getExpiration()))
-                .addClaims(Map.of( // 👈 claims personalizados
+                .addClaims(Map.of(
                         "role", user.getRole(),
                         "enabled", user.isEnabled(),
                         "documentType", user.getDocumentType(),

@@ -1,17 +1,20 @@
 package com.dataprogramming.security.controller;
 
 import com.dataprogramming.security.domain.User;
+import com.dataprogramming.security.mapper.UserMapper;
 import com.dataprogramming.security.security.jwt.JwtUtil;
 import com.dataprogramming.security.security.model.*;
 import com.dataprogramming.security.service.UserService;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.JwtException;
+import io.micrometer.common.util.StringUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+
 import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Mono;
 
@@ -24,23 +27,13 @@ public class AuthController {
 
     private final UserService userService;
     private final JwtUtil jwtUtil;
+    private final UserMapper userMapper;
 
     @PostMapping("/register")
     public Mono<ResponseEntity<RegisterResponse>> register(@RequestBody RegisterRequest request) {
         return userService.registerUser(request)
-                .map(user -> {
-                    // Mapeo de User a RegisterResponse
-                    RegisterResponse response = RegisterResponse.builder()
-                            .id(user.getId())
-                            .documentType(user.getDocumentType())
-                            .documentNumber(user.getDocumentNumber())
-                            .userName(user.getUserName())
-                            .role(user.getRole())
-                            .enabled(user.isEnabled())
-                            .build();
-
-                    return ResponseEntity.status(HttpStatus.CREATED).body(response);
-                });
+                .map(user -> ResponseEntity.status(HttpStatus.CREATED)
+                        .body(userMapper.toRegisterResponse(user)));
     }
 
 
@@ -56,61 +49,64 @@ public class AuthController {
 
     @PostMapping("/validate")
     public ResponseEntity<TokenResponse> validateToken(@RequestHeader(HttpHeaders.AUTHORIZATION) String authHeader) {
+        String token = extractToken(authHeader);
         try {
-            String token = authHeader.replace("Bearer ", "");
             Claims claims = jwtUtil.extractAllClaims(token);
-
-            TokenData tokenData = new TokenData(
-                    token,
-                    claims.getSubject(),
-                    claims.get("role", String.class),
-                    claims.get("enabled", Boolean.class)
-            );
-
-            return ResponseEntity.ok(new TokenResponse(true, "Token válido", tokenData));
-
+            TokenData tokenData = buildTokenData(token, claims);
+            return ResponseEntity.ok(new TokenResponse(true, "Valid token", tokenData));
         } catch (ExpiredJwtException ex) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                    .body(new TokenResponse(false, "El token ha expirado", null));
+            return unauthorizedResponse("The token has expired");
         } catch (JwtException ex) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                    .body(new TokenResponse(false, "Token inválido", null));
+            return unauthorizedResponse("Invalid token");
         }
     }
 
     @PostMapping("/refresh")
     public ResponseEntity<TokenResponse> refreshToken(@RequestHeader(HttpHeaders.AUTHORIZATION) String authHeader) {
+        String oldToken = extractToken(authHeader);
         try {
-            String oldToken = authHeader.replace("Bearer ", "");
+
             Claims claims = jwtUtil.extractAllClaims(oldToken);
-
-            // Construimos el usuario a partir de los claims
-            User user = new User();
-            user.setUserName(claims.getSubject());
-            user.setRole(claims.get("role", String.class));
-            user.setEnabled(claims.get("enabled", Boolean.class));
-            user.setDocumentType(claims.get("documentType", String.class));
-            user.setDocumentNumber(claims.get("documentNumber", String.class));
-
+            User user = buildUserFromClaims(claims);
             String newToken = jwtUtil.generateToken(user);
+            TokenData tokenData = buildTokenData(newToken, claims);
 
-            TokenData tokenData = new TokenData(
-                    newToken,
-                    user.getUserName(),
-                    user.getRole(),
-                    user.isEnabled()
-            );
-
-            return ResponseEntity.ok(new TokenResponse(true, "Token renovado con éxito", tokenData));
-
+            return ResponseEntity.ok(new TokenResponse(true, "Token successfully renewed", tokenData));
         } catch (ExpiredJwtException ex) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                    .body(new TokenResponse(false, "El token ha expirado, no se puede refrescar", null));
+            return unauthorizedResponse("The token has expired, it cannot be refreshed");
         } catch (JwtException ex) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                    .body(new TokenResponse(false, "Token inválido", null));
+            return unauthorizedResponse("Invalid token");
         }
     }
 
+    private String extractToken(String authHeader) {
+        return StringUtils.isNotBlank(authHeader) ? authHeader.replace("Bearer ", "") : "";
+    }
+
+    private TokenData buildTokenData(String token, Claims claims) {
+
+        return TokenData.builder()
+                .token(token)
+                .username(claims.getSubject())
+                .role(claims.get("role", String.class))
+                .enabled(claims.get("enabled", Boolean.class))
+                .build();
+    }
+
+    private ResponseEntity<TokenResponse> unauthorizedResponse(String message) {
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                .body(new TokenResponse(false, message, null));
+    }
+
+    private User buildUserFromClaims(Claims claims) {
+
+        return User.builder()
+                .userName(claims.getSubject())
+                .role(claims.get("role", String.class))
+                .enabled(claims.get("enabled", Boolean.class))
+                .documentType(claims.get("documentType", String.class))
+                .documentNumber(claims.get("documentNumber", String.class))
+                .build();
+    }
 
 }
