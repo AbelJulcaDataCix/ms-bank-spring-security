@@ -27,6 +27,19 @@ public class JwtUtil {
         this.key = Keys.hmacShaKeyFor(jwtProperties.getSecret().getBytes());
     }
 
+    /**
+     * Generates a JWT token for the provided user.
+     *
+     * @param user : The user for whom the token will be generated.
+     * @return the generated JWT token as a string.
+     * The token includes the following custom claims:
+     * - role: The user's role.
+     * - enabled: Whether the user is enabled.
+     * - documentType: The user's document type.
+     * - documentNumber: The user's document number.
+     * The token also includes standard information such as the subject (username),
+     * the issuer, the issue date, the expiration date, and a unique identifier.
+     */
     public String generateToken(User user) {
         log.info("Generating token for user: {}", user.getUserName());
         return Jwts.builder()
@@ -45,6 +58,13 @@ public class JwtUtil {
                 .compact();
     }
 
+    /**
+     * Extracts all claims from the provided JWT token.
+     *
+     * @param token : The JWT token from which to extract claims.
+     * @return the Claims object containing all claims present in the token.
+     * @throws io.jsonwebtoken.JwtException if the token is invalid or cannot be parsed.
+     */
     public Claims extractAllClaims(String token) {
         return Jwts.parserBuilder()
                 .setSigningKey(getSigningKey())
