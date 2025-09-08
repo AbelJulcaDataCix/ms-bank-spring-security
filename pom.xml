@@ -34,6 +34,7 @@
 		<sonar.coverage.jacoco.xmlReportPaths>target/site/jacoco/jacoco.xml</sonar.coverage.jacoco.xmlReportPaths>
 		<sonar.minimum.coverage>0.90</sonar.minimum.coverage>
 		<sonar.coverage.exclusions>
+			com/dataprogramming/security/config/SwaggerConfig.*,
 			com/dataprogramming/security/domain/**,
 			com/dataprogramming/security/mapper/**,
 			com/dataprogramming/security/repository/**,
@@ -179,6 +180,7 @@
 						</goals>
 						<configuration>
 							<excludes>
+								<exclude>com/dataprogramming/security/config/SwaggerConfig.*</exclude>
 								<exclude>com/dataprogramming/security/domain/**</exclude>
 								<exclude>com/dataprogramming/security/mapper/**</exclude>
 								<exclude>com/dataprogramming/security/repository/**</exclude>
@@ -206,6 +208,7 @@
 										</limit>
 									</limits>
 									<excludes>
+										<exclude>com/dataprogramming/security/config/SwaggerConfig.*</exclude>
 										<exclude>com/dataprogramming/security/domain/**</exclude>
 										<exclude>com/dataprogramming/security/mapper/**</exclude>
 										<exclude>com/dataprogramming/security/repository/**</exclude>
@@ -215,6 +218,7 @@
 								</rule>
 							</rules>
 							<excludes>
+								<exclude>com/dataprogramming/security/config/SwaggerConfig.*</exclude>
 								<exclude>com/dataprogramming/security/domain/**</exclude>
 								<exclude>com/dataprogramming/security/mapper/**</exclude>
 								<exclude>com/dataprogramming/security/repository/**</exclude>
