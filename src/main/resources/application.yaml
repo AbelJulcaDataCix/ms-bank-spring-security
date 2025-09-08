@@ -1,0 +1,23 @@
+spring:
+  application:
+    name: "security"
+  data:
+    mongodb:
+      # Add ?authSource=admin to specify the authentication database
+      #uri: mongodb://admin:secret@mongo-server:27017/ms-customer?authSource=admin
+      host: localhost # used to connect container mongo db
+      #host: mongo-server
+      port: 27017
+      username: admin
+      password: secret
+      database: ms-security
+      authentication-database: admin
+
+jwt:
+  secret: "vo4vU++1QvQD9zX3s28Cg+RyUrT0l2h0pifLfUgj75uS5dUbxdSNqd/Ot/pu6oB+ZTM+8I+q5YxHt8IgkppURw="
+  expiration: 180000
+  issuer: data-security
+
+
+server:
+  port: 8073

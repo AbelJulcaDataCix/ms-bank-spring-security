@@ -1,16 +1,18 @@
 package com.dataprogramming.security.security.model;
 
-
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 @Getter
 @Setter
+@Builder
 @AllArgsConstructor
 @NoArgsConstructor
-public class AuthRequest {
-    private String userName;
-    private String password;
+public class TokenResponse {
+    private boolean success;
+    private String message;
+    private TokenData data;
 }
