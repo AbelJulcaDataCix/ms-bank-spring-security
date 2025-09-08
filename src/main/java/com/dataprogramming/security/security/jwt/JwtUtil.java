@@ -58,6 +58,13 @@ public class JwtUtil {
                 .compact();
     }
 
+    /**
+     * Extracts all claims from the provided JWT token.
+     *
+     * @param token : The JWT token from which to extract claims.
+     * @return the Claims object containing all claims present in the token.
+     * @throws io.jsonwebtoken.JwtException if the token is invalid or cannot be parsed.
+     */
     public Claims extractAllClaims(String token) {
         return Jwts.parserBuilder()
                 .setSigningKey(getSigningKey())
