@@ -1,0 +1,8 @@
+{
+  "id": "1",
+  "userName": "john_doe",
+  "documentType": "DNI",
+  "documentNumber": "12345678",
+  "role": "USER",
+  "enabled": true
+}
