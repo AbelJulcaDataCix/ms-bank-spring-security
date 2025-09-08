@@ -48,5 +48,4 @@ import org.springframework.http.HttpHeaders;
         bearerFormat = "JWT"
 )
 public class SwaggerConfig {
-
 }
