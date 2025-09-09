@@ -7,6 +7,15 @@ import lombok.NoArgsConstructor;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 
+/**
+ * User entity for the "users" collection in MongoDB.
+ * <p>
+ * This class represents a system user, including personal information,
+ * credentials, and login status.
+ * It uses Lombok annotations to automatically generate getters, setters,
+ * constructors, and the builder pattern.
+ */
+
 @Data
 @Builder
 @NoArgsConstructor
