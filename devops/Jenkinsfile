@@ -3,7 +3,8 @@ pipeline {
 
     environment {
         SONARQUBE_ENV   = 'sonar-local'
-        SONAR_PROJECT   = 'app-bank-spring-security'
+        SONAR_PROJECT   = 'spring-boot-app-bank-spring-security'
+        SONAR_PROJECT_NAME   = 'app-bank-spring-security'
         SONAR_HOST_URL  = 'http://sonarqube:9000'
         SONAR_AUTH_TOKEN = credentials('sonar-token')
         GIT_CREDENTIALS = 'git-credentials'
@@ -70,6 +71,7 @@ pipeline {
                     sh """
                         mvn sonar:sonar \
                           -Dsonar.projectKey=${SONAR_PROJECT} \
+                          -Dsonar.projectName=${SONAR_PROJECT_NAME} \
                           -Dsonar.host.url=${SONAR_HOST_URL} \
                           -Dsonar.login=${SONAR_AUTH_TOKEN}
                     """
@@ -79,8 +81,13 @@ pipeline {
 
         stage("Quality Gate") {
             steps {
-                timeout(time: 1, unit: 'HOURS') {
-                    waitForQualityGate abortPipeline: true
+                script {
+                    timeout(time: 5, unit: 'MINUTES') {
+                        def qg = waitForQualityGate()
+                        if (qg.status != 'OK') {
+                            error "Pipeline aborted due to quality gate failure: ${qg.status}"
+                        }
+                    }
                 }
             }
         }
