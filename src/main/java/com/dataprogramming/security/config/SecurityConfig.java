@@ -10,6 +10,13 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.server.SecurityWebFilterChain;
 
+/**
+ * Security configuration for the WebFlux application.
+ * <p>
+ * This class defines the security filter chain, including the integration
+ * of a custom filter for JWT authentication and the configuration of public and protected routes.
+ */
+
 @Configuration
 @EnableWebFluxSecurity
 public class SecurityConfig {
