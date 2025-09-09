@@ -17,6 +17,15 @@ import reactor.core.publisher.Mono;
 
 import java.util.List;
 
+/**
+ * JWT authentication filter for WebFlux applications.
+ * This filter intercepts each HTTP request and checks for the presence of a JWT token in the Authorization header.
+ * If the token is valid, it extracts the user and role, and establishes authentication in the reactive security context.
+ * If the token is invalid or not present, the request continues without authentication or returns 401 on error.
+ * Dependencies:
+ * - JwtUtil: Utility for extracting and validating JWT claims.
+ */
+
 @Component
 public class JwtAuthenticationFilter implements WebFilter {
 
