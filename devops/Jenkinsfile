@@ -1,0 +1,103 @@
+pipeline {
+    agent any
+
+    environment {
+        SONARQUBE_ENV   = 'sonar-local'
+        SONAR_PROJECT   = 'app-bank-spring-security'
+        SONAR_HOST_URL  = 'http://sonarqube:9000'
+        SONAR_AUTH_TOKEN = credentials('sonar-token')
+        GIT_CREDENTIALS = 'git-credentials'
+        GIT_REPO = 'https://github.com/AbelJulcaDataCix/ms-bank-spring-security.git'
+    }
+
+    tools {
+        maven 'Maven3'
+        jdk 'JDK17'
+    }
+
+    stages {
+        stage('Checkout develop') {
+            steps {
+                checkout([
+                    $class: 'GitSCM',
+                    branches: [[name: '*/develop']],
+                    userRemoteConfigs: [[
+                        url: "${GIT_REPO}",
+                        credentialsId: "${GIT_CREDENTIALS}"
+                    ]]
+                ])
+            }
+        }
+
+        stage('Merge develop -> main') {
+            steps {
+                withCredentials([usernamePassword(credentialsId: "${GIT_CREDENTIALS}", usernameVariable: 'GIT_USER', passwordVariable: 'GIT_PASS')]) {
+                    sh '''
+                        git config user.email "jenkins@ci.com"
+                        git config user.name "Jenkins CI"
+
+                        git fetch origin
+                        git checkout main
+                        git pull origin main
+                        git merge origin/develop --no-ff -m "Auto merge develop -> main by Jenkins"
+
+                        git push https://${GIT_USER}:${GIT_PASS}@github.com/AbelJulcaDataCix/ms-bank-spring-security.git main
+                    '''
+                }
+            }
+        }
+
+        stage('Compile') {
+            steps {
+                sh 'mvn clean compile'
+            }
+        }
+
+        stage('Unit Tests with Coverage') {
+            steps {
+                sh 'mvn test jacoco:report'
+            }
+            post {
+                always {
+                    junit '**/target/surefire-reports/*.xml'
+                }
+            }
+        }
+
+        stage('SonarQube Analysis') {
+            steps {
+                withSonarQubeEnv("${SONARQUBE_ENV}") {
+                    sh """
+                        mvn sonar:sonar \
+                          -Dsonar.projectKey=${SONAR_PROJECT} \
+                          -Dsonar.host.url=${SONAR_HOST_URL} \
+                          -Dsonar.login=${SONAR_AUTH_TOKEN}
+                    """
+                }
+            }
+        }
+
+        stage("Quality Gate") {
+            steps {
+                timeout(time: 1, unit: 'HOURS') {
+                    waitForQualityGate abortPipeline: true
+                }
+            }
+        }
+
+        stage('Package') {
+            steps {
+                sh 'mvn package -DskipTests'
+            }
+        }
+    }
+
+    post {
+        success {
+            echo "✅ Build completado con éxito"
+        }
+        failure {
+            echo "❌ Falló el pipeline"
+        }
+    }
+}
