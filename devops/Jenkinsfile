@@ -97,11 +97,55 @@ pipeline {
                 sh 'mvn package -DskipTests'
             }
         }
+
+        stage('Build & Deploy Docker Container') {
+            steps {
+                script {
+                    // Nombre de imagen desde el nombre del repo
+                    def imageName = "${GIT_REPO.split('/').last().replace('.git','')}"
+
+                    // Tag de la imagen desde pom.xml
+                    def imageTag = sh(
+                        script: "mvn help:evaluate -Dexpression=project.version -q -DforceStdout | sed 's/-SNAPSHOT//'",
+                        returnStdout: true
+                    ).trim()
+
+                    // Puerto dinámico desde yml, yaml o properties
+                    def servicePort = sh(script: """
+                        if [ -f src/main/resources/application.yml ]; then
+                            grep 'port:' src/main/resources/application.yml | awk '{print \$2}'
+                        elif [ -f src/main/resources/application.yaml ]; then
+                            grep 'port:' src/main/resources/application.yaml | awk '{print \$2}'
+                        elif [ -f src/main/resources/application.properties ]; then
+                            grep 'server.port' src/main/resources/application.properties | cut -d'=' -f2
+                        else
+                            echo 8080
+                        fi
+                    """, returnStdout: true).trim()
+
+                    sh """
+                        echo "📦 Construyendo imagen Docker: ${imageName}:${imageTag}"
+                        docker build -t ${imageName}:${imageTag} .
+
+                        echo "🌐 Creando red si no existe..."
+                        docker network create ms-bank-spring-boot || true
+
+                        echo "🛑 Eliminando contenedor viejo si existe..."
+                        docker rm -f ${imageName} || true
+
+                        echo "🚀 Levantando nuevo contenedor en puerto ${servicePort}"
+                        docker run -d --rm --name ${imageName} \
+                          --network ms-bank-spring-boot \
+                          -p ${servicePort}:${servicePort} ${imageName}:${imageTag}
+                    """
+                }
+            }
+        }
     }
 
     post {
         success {
-            echo "✅ Build completado con éxito"
+            echo "✅ Build completado con éxito. Microservicio desplegado en Docker."
         }
         failure {
             echo "❌ Falló el pipeline"
