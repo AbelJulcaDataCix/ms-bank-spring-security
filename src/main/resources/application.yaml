@@ -20,4 +20,4 @@ jwt:
 
 
 server:
-  port: 8073
+  port: 8010
