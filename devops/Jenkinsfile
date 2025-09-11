@@ -130,7 +130,7 @@ pipeline {
                     sh "docker build -t ${imageName}:${imageTag} ."
 
                     echo "🛑 Eliminando contenedor viejo si existe..."
-                    sh "docker rm -f ${imageName} || true"
+                    sh "docker rm -f ${containName} || true"
 
                     echo "🚀 Levantando nuevo contenedor en puerto ${appPort}"
                     sh "docker run -d --rm --name ${containName} --network ms-bank-spring-boot -p ${appPort}:${appPort} ${imageName}:${imageTag}"
