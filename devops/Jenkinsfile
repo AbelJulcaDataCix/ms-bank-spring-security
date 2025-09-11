@@ -101,6 +101,9 @@ pipeline {
         stage('Build & Deploy Docker Container') {
             steps {
                 script {
+                    // Nombre de imagen desde el nombre del repo
+                    def imageName = "${GIT_REPO.split('/').last().replace('.git','')}"
+
                     def imageTag = sh(script: "mvn help:evaluate -Dexpression=project.version -q -DforceStdout | sed 's/-SNAPSHOT//'", returnStdout: true).trim()
 
                     // Detecta puerto dinámicamente
@@ -119,14 +122,14 @@ pipeline {
                         returnStdout: true
                     ).trim()
 
-                    echo "📦 Construyendo imagen Docker: ms-bank-spring-security:${imageTag}"
-                    sh "docker build -t ms-bank-spring-security:${imageTag} ."
+                    echo "📦 Construyendo imagen Docker: ${imageName}:${imageTag}"
+                    sh "docker build -t ${imageName}:${imageTag} ."
 
                     echo "🛑 Eliminando contenedor viejo si existe..."
-                    sh "docker rm -f ms-bank-spring-security || true"
+                    sh "docker rm -f ${imageName} || true"
 
                     echo "🚀 Levantando nuevo contenedor en puerto ${appPort}"
-                    sh "docker run -d --rm --name ms-bank-spring-security --network ms-bank-spring-boot -p ${appPort}:${appPort} ms-bank-spring-security:${imageTag}"
+                    sh "docker run -d --rm --name ${imageName} --network ms-bank-spring-boot -p ${appPort}:${appPort} ${imageName}:${imageTag}"
                 }
             }
         }
