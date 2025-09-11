@@ -108,6 +108,7 @@ pipeline {
                     ).trim()
 
                     def imageName = "ms-bank-spring-security"
+                    def containName = "ms-bank-spring"
 
                     // Leer puerto de application.* (yaml o properties)
                     def appPort = sh(
@@ -132,7 +133,7 @@ pipeline {
                     sh "docker rm -f ${imageName} || true"
 
                     echo "🚀 Levantando nuevo contenedor en puerto ${appPort}"
-                    sh "docker run -d --rm --name ${imageName} --network ms-bank-spring-boot -p ${appPort}:${appPort} ${imageName}:${imageTag}"
+                    sh "docker run -d --rm --name ${containName} --network ms-bank-spring-boot -p ${appPort}:${appPort} ${imageName}:${imageTag}"
                 }
             }
         }
