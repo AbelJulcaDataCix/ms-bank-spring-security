@@ -101,18 +101,21 @@ pipeline {
         stage('Build & Deploy Docker Container') {
             steps {
                 script {
-                    // Nombre de imagen desde el nombre del repo
-                    def imageName = "${GIT_REPO.split('/').last().replace('.git','')}"
+                    // Extraer version del pom.xml
+                    def imageTag = sh(
+                        script: "mvn help:evaluate -Dexpression=project.version -q -DforceStdout | sed 's/-SNAPSHOT//'",
+                        returnStdout: true
+                    ).trim()
 
-                    def imageTag = sh(script: "mvn help:evaluate -Dexpression=project.version -q -DforceStdout | sed 's/-SNAPSHOT//'", returnStdout: true).trim()
+                    def imageName = "ms-bank-spring-security"
 
-                    // Detecta puerto dinámicamente
+                    // Leer puerto de application.* (yaml o properties)
                     def appPort = sh(
                         script: """
                             if [ -f src/main/resources/application.yml ]; then
-                                grep -E '^[ ]*port:' -A1 src/main/resources/application.yml | grep port | awk '{print \$2}'
+                                grep -A1 '^server:' src/main/resources/application.yml | grep port | awk '{print \$2}'
                             elif [ -f src/main/resources/application.yaml ]; then
-                                grep -E '^[ ]*port:' -A1 src/main/resources/application.yaml | grep port | awk '{print \$2}'
+                                grep -A1 '^server:' src/main/resources/application.yaml | grep port | awk '{print \$2}'
                             elif [ -f src/main/resources/application.properties ]; then
                                 grep '^server.port' src/main/resources/application.properties | cut -d '=' -f2
                             else
