@@ -107,8 +107,8 @@ pipeline {
                         returnStdout: true
                     ).trim()
 
-                    def imageName = "ms-bank-spring-security"
-                    def containName = "ms-bank-spring"
+                    def imageName = "ms-spring-boot-app-bank-security"
+                    def containName = "cn-ms-spring-boot-app-bank-security"
 
                     // Leer puerto de application.* (yaml o properties)
                     def appPort = sh(
