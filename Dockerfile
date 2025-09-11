@@ -1,11 +1,11 @@
 # ------------------------------
-# Stage 1: Build (Maven + JDK17)
+# Stage 1: Build (con Maven)
 # ------------------------------
-FROM maven:3.9.6-eclipse-temurin-17 AS build
+FROM maven:3.9.8-eclipse-temurin-17 AS build
 
 WORKDIR /app
 
-# Copiar pom.xml y descargar dependencias (para aprovechar cache)
+# Copiar pom.xml y descargar dependencias (cacheo de dependencias)
 COPY pom.xml .
 RUN mvn dependency:go-offline -B
 
@@ -23,8 +23,8 @@ WORKDIR /app
 # Copiar solo el jar generado del stage anterior
 COPY --from=build /app/target/*.jar app.jar
 
-# Exponer el puerto de Spring Boot
+# Puerto expuesto (cámbialo si tu micro cambia de puerto)
 EXPOSE 8010
 
 # Comando de ejecución
-ENTRYPOINT ["java","-jar","app.jar"]
+ENTRYPOINT ["java", "-jar", "app.jar"]
