@@ -5,8 +5,8 @@ spring:
     mongodb:
       # Add ?authSource=admin to specify the authentication database
       #uri: mongodb://admin:secret@mongo-server:27017/ms-customer?authSource=admin
-      host: localhost # used to connect container mongo db
-      #host: mongo-server
+      #host: localhost # used to connect container mongo db
+      host: mongo-server
       port: 27017
       username: admin
       password: secret
