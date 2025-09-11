@@ -36,7 +36,6 @@ public class UserService {
         String encryptedPassword = passwordEncoder.encode(request.getPassword());
         request.setPassword(encryptedPassword);
         User user = userMapper.toUser(request);
-        log.info("pass: {}", user.getPassword());
         return userRepository.save(user);
     }
 }
