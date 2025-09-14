@@ -1,16 +1,47 @@
 <configuration>
     <include resource="org/springframework/boot/logging/logback/defaults.xml"/>
 
-    <!-- Console JSON (útil para stdout) -->
+    <!-- Console JSON (útil para stdout, con traceId/spanId) -->
     <appender name="JSON_STDOUT" class="ch.qos.logback.core.ConsoleAppender">
-        <encoder class="net.logstash.logback.encoder.LogstashEncoder" />
+        <encoder class="net.logstash.logback.encoder.LogstashEncoder">
+            <providers>
+                <timestamp/>
+                <pattern>
+                    <pattern>
+                        {
+                        "traceId": "%X{traceId:-}",
+                        "spanId": "%X{spanId:-}",
+                        "level": "%level",
+                        "logger": "%logger",
+                        "message": "%message",
+                        "thread": "%thread"
+                        }
+                    </pattern>
+                </pattern>
+            </providers>
+        </encoder>
     </appender>
 
     <!-- Appender que envía JSON a Logstash por TCP -->
     <appender name="LOGSTASH_TCP" class="net.logstash.logback.appender.LogstashTcpSocketAppender">
         <destination>logstash:5000</destination>
-        <encoder class="net.logstash.logback.encoder.LogstashEncoder" />
-        <!-- timeout, reconnectionDelay, etc, puedes configurar aquí -->
+        <encoder class="net.logstash.logback.encoder.LogstashEncoder">
+            <providers>
+                <timestamp/>
+                <pattern>
+                    <pattern>
+                        {
+                        "traceId": "%X{traceId:-}",
+                        "spanId": "%X{spanId:-}",
+                        "level": "%level",
+                        "logger": "%logger",
+                        "message": "%message",
+                        "thread": "%thread"
+                        }
+                    </pattern>
+                </pattern>
+            </providers>
+        </encoder>
     </appender>
 
     <root level="INFO">
