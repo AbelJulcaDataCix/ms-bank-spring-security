@@ -1,45 +1,33 @@
 <configuration>
     <include resource="org/springframework/boot/logging/logback/defaults.xml"/>
 
-    <!-- Console JSON (útil para stdout, con traceId/spanId) -->
+    <!-- Console JSON -->
     <appender name="JSON_STDOUT" class="ch.qos.logback.core.ConsoleAppender">
-        <encoder class="net.logstash.logback.encoder.LogstashEncoder">
+        <encoder class="net.logstash.logback.encoder.LoggingEventCompositeJsonEncoder">
             <providers>
                 <timestamp/>
-                <pattern>
-                    <pattern>
-                        {
-                        "traceId": "%X{traceId:-}",
-                        "spanId": "%X{spanId:-}",
-                        "level": "%level",
-                        "logger": "%logger",
-                        "message": "%message",
-                        "thread": "%thread"
-                        }
-                    </pattern>
-                </pattern>
+                <level/>
+                <threadName/>
+                <loggerName/>
+                <message/>
+                <stackTrace/>
+                <mdc/> <!-- Aquí estarán traceId y spanId gracias a Spring Cloud Sleuth / Brave -->
             </providers>
         </encoder>
     </appender>
 
-    <!-- Appender que envía JSON a Logstash por TCP -->
+    <!-- Logstash TCP -->
     <appender name="LOGSTASH_TCP" class="net.logstash.logback.appender.LogstashTcpSocketAppender">
         <destination>logstash:5000</destination>
-        <encoder class="net.logstash.logback.encoder.LogstashEncoder">
+        <encoder class="net.logstash.logback.encoder.LoggingEventCompositeJsonEncoder">
             <providers>
                 <timestamp/>
-                <pattern>
-                    <pattern>
-                        {
-                        "traceId": "%X{traceId:-}",
-                        "spanId": "%X{spanId:-}",
-                        "level": "%level",
-                        "logger": "%logger",
-                        "message": "%message",
-                        "thread": "%thread"
-                        }
-                    </pattern>
-                </pattern>
+                <level/>
+                <threadName/>
+                <loggerName/>
+                <message/>
+                <stackTrace/>
+                <mdc/>
             </providers>
         </encoder>
     </appender>
