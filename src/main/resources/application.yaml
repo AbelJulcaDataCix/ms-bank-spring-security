@@ -1,4 +1,8 @@
 spring:
+  zipkin:
+    base-url: http://zipkin:9411
+    sender:
+      type: web
   application:
     name: "security"
   data:
@@ -18,6 +22,23 @@ jwt:
   expiration: 180000
   issuer: data-security
 
+# Actuator + Prometheus
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+  endpoint:
+    health:
+      show-details: always
+  metrics:
+    export:
+      prometheus:
+        enabled: true
+  tracing:
+    enabled: true
+    sampling:
+      probability: 1.0   # 1.0 = 100% de trazas (ajusta en prod)
 
 server:
   port: 8010
