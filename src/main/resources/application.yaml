@@ -42,3 +42,12 @@ management:
 
 server:
   port: 8010
+
+logging:
+  level:
+    root: INFO                # nivel global
+    org.springframework.data.mongodb.core.MongoTemplate: DEBUG
+    org.mongodb.driver: DEBUG
+    org.springframework.web: DEBUG
+    org.hibernate.SQL: DEBUG   # si usas JPA en otros servicios
+    org.springframework.security: DEBUG
