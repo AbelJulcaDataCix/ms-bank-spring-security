@@ -32,6 +32,8 @@ public class AuthController {
     @PostMapping("/register")
     public Mono<ResponseEntity<RegisterResponse>> register(@RequestBody RegisterRequest request) {
         return userService.registerUser(request)
+                .doOnSuccess(user -> log.info("User registered successfully: {}", user.getUserName()))
+                .doOnError(error -> log.error("Error registering user: {}", error.getMessage()))
                 .map(user -> ResponseEntity.status(HttpStatus.CREATED)
                         .body(userMapper.toRegisterResponse(user)));
     }
@@ -40,6 +42,8 @@ public class AuthController {
     @PostMapping("/login")
     public Mono<ResponseEntity<AuthResponse>> login(@RequestBody AuthRequest request) {
         return userService.validateUser(request.getUserName(), request.getPassword())
+                .doOnSuccess(user -> log.info("User authenticated successfully"))
+                .doOnError(error -> log.error("Authentication failed: {}", error.getMessage()))
                 .flatMap(user -> {
                     String token = jwtUtil.generateToken(user);
                     return Mono.just(ResponseEntity.ok(new AuthResponse(token)));
@@ -53,6 +57,7 @@ public class AuthController {
         try {
             Claims claims = jwtUtil.extractAllClaims(token);
             TokenData tokenData = buildTokenData(token, claims);
+            log.info("Token is valid for user: {}", tokenData.getUsername());
             return ResponseEntity.ok(new TokenResponse(true, "Valid token", tokenData));
         } catch (ExpiredJwtException ex) {
             return unauthorizedResponse("The token has expired");
@@ -70,7 +75,7 @@ public class AuthController {
             User user = buildUserFromClaims(claims);
             String newToken = jwtUtil.generateToken(user);
             TokenData tokenData = buildTokenData(newToken, claims);
-
+            log.info("Token successfully renewed");
             return ResponseEntity.ok(new TokenResponse(true, "Token successfully renewed", tokenData));
         } catch (ExpiredJwtException ex) {
             return unauthorizedResponse("The token has expired, it cannot be refreshed");
