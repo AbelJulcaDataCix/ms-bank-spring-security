@@ -16,6 +16,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 
 import org.springframework.web.bind.annotation.*;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 
@@ -31,13 +32,21 @@ public class AuthController {
 
     @PostMapping("/register")
     public Mono<ResponseEntity<RegisterResponse>> register(@RequestBody RegisterRequest request) {
-        return userService.registerUser(request)
-                .doOnSuccess(user -> log.info("User registered successfully: {}", user.getUserName()))
-                .doOnError(error -> log.error("Error registering user: {}", error.getMessage()))
-                .map(user -> ResponseEntity.status(HttpStatus.CREATED)
-                        .body(userMapper.toRegisterResponse(user)));
-    }
 
+        return userService.userExists(request.getDocumentNumber())
+                .flatMap(notExists -> {
+                    if (Boolean.TRUE.equals(notExists)) {
+                        return userService.registerUser(request)
+                                .doOnSuccess(user -> log.info("User registered successfully: {}", user.getUserName()))
+                                .doOnError(error -> log.error("Error registering user: {}", error.getMessage()))
+                                .map(user -> ResponseEntity.status(HttpStatus.CREATED)
+                                        .body(userMapper.toRegisterResponse(user)));
+                    } else {
+                        log.warn("Attempt to register an existing user: {}", request.getDocumentNumber());
+                        return Mono.just(ResponseEntity.status(HttpStatus.CONFLICT).build());
+                    }
+                });
+    }
 
     @PostMapping("/login")
     public Mono<ResponseEntity<AuthResponse>> login(@RequestBody AuthRequest request) {
@@ -82,6 +91,36 @@ public class AuthController {
         } catch (JwtException ex) {
             return unauthorizedResponse("Invalid token");
         }
+    }
+
+    @GetMapping("/users")
+    public Flux<UserResponse> getAllUsers() {
+        return userService.getAllUsers()
+                .map(userMapper::toUserResponse)
+                .doOnNext(user -> log.info("Fetched user: {}", user.getUserName()));
+    }
+
+    @GetMapping("/users/{id}")
+    public Mono<ResponseEntity<UserResponse>> getUserById(@PathVariable String id) {
+        return userService.getUserById(id)
+                .map(userMapper::toUserResponse)
+                .doOnNext(user -> log.info("Fetched user by ID: {}", user.getUserName()))
+                .map(ResponseEntity::ok)
+                .defaultIfEmpty(ResponseEntity.notFound().build());
+    }
+
+    @DeleteMapping("/users/{id}")
+    public Mono<ResponseEntity<Void>> deleteUserById(@PathVariable String id) {
+        return userService.deleteUserById(id)
+                .map(deleted -> {
+                    if (Boolean.TRUE.equals(deleted)) {
+                        log.info("Deleted user with ID: {}", id);
+                        return ResponseEntity.noContent().<Void>build();
+                    } else {
+                        log.warn("Attempt to delete non-existing user with ID: {}", id);
+                        return ResponseEntity.notFound().build();
+                    }
+                });
     }
 
     private String extractToken(String authHeader) {

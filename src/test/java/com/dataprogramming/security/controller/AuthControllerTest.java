@@ -1,9 +1,13 @@
 package com.dataprogramming.security.controller;
 
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.Mockito.when;
 
 import com.dataprogramming.security.domain.User;
 import com.dataprogramming.security.mapper.UserMapper;
@@ -14,6 +18,7 @@ import com.dataprogramming.security.security.model.RegisterRequest;
 import com.dataprogramming.security.security.model.RegisterResponse;
 import com.dataprogramming.security.security.model.TokenData;
 import com.dataprogramming.security.security.model.TokenResponse;
+import com.dataprogramming.security.security.model.UserResponse;
 import com.dataprogramming.security.service.UserService;
 import com.dataprogramming.security.util.TestUtil;
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -29,8 +34,11 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
+
+import java.util.Objects;
 
 @ExtendWith(MockitoExtension.class)
 class AuthControllerTest {
@@ -68,6 +76,7 @@ class AuthControllerTest {
     @DisplayName("returnsCreatedResponseWhenUserIsRegistered")
     void returnsCreatedResponseWhenUserIsRegistered() {
 
+        when(userService.userExists(any())).thenReturn(Mono.just(true));
         when(userService.registerUser(any(RegisterRequest.class))).thenReturn(Mono.just(user));
         when(userMapper.toRegisterResponse(user)).thenReturn(registerResponse);
 
@@ -227,6 +236,139 @@ class AuthControllerTest {
         assertThat(response.getBody()).isNotNull();
         assertThat(response.getBody().isSuccess()).isFalse();
         assertThat(response.getBody().getMessage()).isEqualTo("Invalid token");
+    }
+
+    @Test
+    @DisplayName("Returns User Responses When Users Exist")
+    void returnsUserResponsesWhenUsersExist() {
+        // Arrange
+        UserResponse userResponse = new UserResponse(
+                user.getId(),
+                user.getUserName(),
+                user.getDocumentNumber(),
+                user.isEnabled()
+        );
+
+        when(userService.getAllUsers()).thenReturn(Flux.just(user));
+        when(userMapper.toUserResponse(any())).thenReturn(userResponse);
+
+        // Act
+        Flux<UserResponse> result = authController.getAllUsers();
+
+        // Assert
+        StepVerifier.create(result)
+                .expectNext(userResponse)
+                .verifyComplete();
+
+        verify(userService, times(1)).getAllUsers();
+        verify(userMapper, times(1)).toUserResponse(any());
+    }
+
+    @Test
+    @DisplayName("Returns Empty Flux When No Users Exist")
+    void returnsEmptyFluxWhenNoUsersExist() {
+        // Arrange
+        when(userService.getAllUsers()).thenReturn(Flux.empty());
+
+        // Act
+        Flux<UserResponse> result = authController.getAllUsers();
+
+        // Assert
+        StepVerifier.create(result)
+                .verifyComplete();
+
+        verify(userService, times(1)).getAllUsers();
+        verifyNoInteractions(userMapper);
+    }
+
+    @Test
+    @DisplayName("Returns Ok Response When User Exists By Id")
+    void returnsOkResponseWhenUserExistsById() {
+        // Arrange
+        String userId = user.getId();
+        UserResponse userResponse = new UserResponse(
+                user.getId(),
+                user.getUserName(),
+                user.getDocumentNumber(),
+                user.isEnabled()
+        );
+
+        when(userService.getUserById(any())).thenReturn(Mono.just(user));
+        when(userMapper.toUserResponse(any())).thenReturn(userResponse);
+
+        // Act
+        Mono<ResponseEntity<UserResponse>> result = authController.getUserById(userId);
+
+        // Assert
+        StepVerifier.create(result)
+                .expectNextMatches(responseEntity ->
+                        responseEntity.getStatusCode().is2xxSuccessful() &&
+                                Objects.equals(responseEntity.getBody(), userResponse)
+                )
+                .verifyComplete();
+
+        verify(userService, times(1)).getUserById(anyString());
+        verify(userMapper, times(1)).toUserResponse(any());
+    }
+
+    @Test
+    @DisplayName("Returns Not Found Response When User Does Not Exist")
+    void returnsNotFoundResponseWhenUserDoesNotExist() {
+        // Arrange
+        String userId = "non-existent-id";
+        when(userService.getUserById(any())).thenReturn(Mono.empty());
+
+        // Act
+        Mono<ResponseEntity<UserResponse>> result = authController.getUserById(userId);
+
+        // Assert
+        StepVerifier.create(result)
+                .expectNextMatches(responseEntity ->
+                        responseEntity.getStatusCode().is4xxClientError() &&
+                                responseEntity.getStatusCode().value() == 404
+                )
+                .verifyComplete();
+
+        verify(userService, times(1)).getUserById(anyString());
+        verifyNoInteractions(userMapper);
+    }
+
+    @Test
+    @DisplayName("Returns No Content When User Is Deleted")
+    void returnsNoContentWhenUserIsDeleted() {
+        // Arrange
+        String userId = "existing-id";
+        when(userService.deleteUserById(any())).thenReturn(Mono.just(true));
+
+        // Act
+        Mono<ResponseEntity<Void>> result = authController.deleteUserById(userId);
+
+        // Assert
+        StepVerifier.create(result)
+                .expectNextMatches(response -> response.getStatusCode().is2xxSuccessful() &&
+                        response.getStatusCode().value() == 204)
+                .verifyComplete();
+
+        verify(userService, times(1)).deleteUserById(anyString());
+    }
+
+    @Test
+    @DisplayName("Returns Not Found When User Does Not Exist")
+    void returnsNotFoundWhenUserDoesNotExist() {
+        // Arrange
+        String userId = "non-existent-id";
+        when(userService.deleteUserById(any())).thenReturn(Mono.just(false));
+
+        // Act
+        Mono<ResponseEntity<Void>> result = authController.deleteUserById(userId);
+
+        // Assert
+        StepVerifier.create(result)
+                .expectNextMatches(response -> response.getStatusCode().is4xxClientError() &&
+                        response.getStatusCode().value() == 404)
+                .verifyComplete();
+
+        verify(userService, times(1)).deleteUserById(anyString());
     }
 
 }
