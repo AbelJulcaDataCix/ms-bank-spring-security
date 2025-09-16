@@ -8,6 +8,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 @Slf4j
@@ -40,5 +41,26 @@ public class UserService {
         User user = userMapper.toUser(request);
         user.setEnabled(true);
         return userRepository.save(user);
+    }
+
+    public Mono<Boolean> userExists(String documentNumber) {
+        return userRepository.findByDocumentNumber(documentNumber)
+                .flatMap(user -> Mono.just(false))
+                .switchIfEmpty(Mono.just(true));
+    }
+
+    public Flux<User> getAllUsers() {
+        return userRepository.findAll();
+    }
+
+    public Mono<User> getUserById(String id) {
+        return userRepository.findById(id);
+    }
+
+    public Mono<Boolean> deleteUserById(String id) {
+        return userRepository.findById(id)
+                .flatMap(user -> userRepository.delete(user)
+                        .then(Mono.just(true)))
+                .switchIfEmpty(Mono.just(false));
     }
 }

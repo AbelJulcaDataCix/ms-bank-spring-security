@@ -32,7 +32,8 @@ public class SecurityConfig {
         return http
                 .csrf(ServerHttpSecurity.CsrfSpec::disable)
                 .authorizeExchange(exchanges -> exchanges
-                        .pathMatchers("/auth/**", "swagger-ui/**", "/v3/api-docs/**", "/actuator/**").permitAll()
+                        .pathMatchers("/auth/**", "swagger-ui/**", "/v3/api-docs/**", "/actuator/**")
+                        .permitAll()
                         .anyExchange().authenticated()
                 )
                 .addFilterAt(jwtAuthenticationFilter, SecurityWebFiltersOrder.AUTHENTICATION)
