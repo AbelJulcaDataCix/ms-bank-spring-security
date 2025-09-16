@@ -43,6 +43,10 @@ management:
     enabled: true
     sampling:
       probability: 1.0   # 1.0 = 100% de trazas (ajusta en prod)
+  zipkin:
+    base-url: http://zipkin:9411
+    sender:
+      type: web
 
 server:
   port: 8010
