@@ -21,6 +21,8 @@ public class UserService {
 
     public Mono<User> validateUser(String userName, String password) {
         return userRepository.findByUserName(userName)
+                .doOnSuccess(user -> log.info("User found"))
+                .doOnError(error -> log.error("Error finding user: {}", error.getMessage()))
                 .flatMap(user -> {
                     if (passwordEncoder.matches(password, user.getPassword())) {
                         return Mono.just(user);
