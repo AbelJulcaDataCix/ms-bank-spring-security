@@ -1,10 +1,6 @@
 spring:
-  zipkin:
-    base-url: http://zipkin:9411
-    sender:
-      type: web
   application:
-    name: "security"
+    name: security
   data:
     mongodb:
       # Add ?authSource=admin to specify the authentication database
@@ -22,7 +18,7 @@ jwt:
   expiration: 180000
   issuer: data-security
 
-# Actuator + Prometheus
+# Actuator + Prometheus + Tracing
 management:
   endpoints:
     web:
@@ -44,18 +40,17 @@ management:
     sampling:
       probability: 1.0   # 1.0 = 100% de trazas (ajusta en prod)
   zipkin:
-    base-url: http://zipkin:9411
-    sender:
-      type: web
+    tracing:
+      endpoint: http://zipkin:9411/api/v2/spans
 
 server:
   port: 8010
 
 logging:
   level:
-    root: INFO                # nivel global
+    root: INFO
     org.springframework.data.mongodb.core.MongoTemplate: DEBUG
     org.mongodb.driver: DEBUG
     org.springframework.web: DEBUG
-    org.hibernate.SQL: DEBUG   # si usas JPA en otros servicios
+    org.hibernate.SQL: DEBUG
     org.springframework.security: DEBUG
