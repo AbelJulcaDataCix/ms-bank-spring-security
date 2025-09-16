@@ -109,8 +109,6 @@ class AuthControllerTest {
     void returnsUnauthorizedWhenUserIsInvalid() {
         AuthRequest authRequest = TestUtil.readDataFromFileJson(
                 "request/authRequest.json", new TypeReference<>() {});
-        User user = TestUtil.readDataFromFileJson(
-                "data/user.json", new TypeReference<>() {});
         // Arrange
         when(userService.validateUser(any(), any())).thenReturn(Mono.empty());
         // Act
